@@ -14,10 +14,15 @@ For more information check the Demo APP
 **Code available in Master Branch******
 
 **Create the Custom Class such as MyTask and extends the CoroutinesAsyncTask and override the method
+
    :- doInBackground() method is mandatory. It is use to perfrom the task in background thread.
+   
    :-onPreExecute(), onPostExecute() onProgressUpdate() and onCancelled() methods are optional, override if required
+   
    :-Call cancel() method to cancel the Job and remove the handler(Recommended to call it before calling executeAndReturn())
+   
    :-Call isCancelled() to check that Job is canceled or not as per requirement
+   
    :-This lib file can be use with Java and kotlin code**
    
    
