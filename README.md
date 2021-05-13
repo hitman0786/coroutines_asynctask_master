@@ -24,19 +24,27 @@ For more information check the Demo APP
   ** Code:-**
   
   val myTask = MyTask()
+  
   myTask.cancel()
+  
   myTask.executeAndReturn(10 as Integer)
   
   
   **Helper class**
   
   class MyTask: CoroutineAsyncTask<Integer, Integer, String>(){
+  
         override fun onPreExecute() {
+		  
             super.onPreExecute()
+				
             output.text = "Task Starting...";
         }
+		  
         override fun doInBackground(params: Array<out Integer>): String {
+		  
             while (count <= params[0].toInt()) {
+				
                 try {
                     Thread.sleep(1000)
                     publishProgress(count as Integer)
@@ -45,16 +53,14 @@ For more information check the Demo APP
                 }
                 count++
             }
+				
             return "Task Completed."
         }
-
-        @SuppressLint("SetTextI18n")
         override fun onProgressUpdate(result: Array<out Any?>) {
             super.onProgressUpdate(result)
             output.text = "Running..."+ result[0] as Int
             progressBar.progress = result[0] as Int
         }
-
         override fun onPostExecute(result: String) {
             super.onPostExecute(result)
             progressBar.visibility = View.GONE
