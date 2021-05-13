@@ -20,7 +20,9 @@ class MainActivity : AppCompatActivity() {
             progressBar.visibility = View.VISIBLE
             progressBar.progress = 0
 
-            MyTask().executeAndReturn(10 as Integer)
+            val myTask = MyTask()
+            myTask.cancel()
+            myTask.executeAndReturn(10 as Integer)
         }
     }
 

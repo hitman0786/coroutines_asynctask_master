@@ -9,26 +9,25 @@ import androidx.annotation.WorkerThread
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 
-abstract class CoroutineAsyncTask<Params, Progress, Result> : CoroutineScope {
+abstract class CoroutineAsyncTask<Params, Progress, Result> {
     private val TAG = "CoroutineAsyncTask"
     private var sHandler: InternalHandler? = null
     private val MESSAGE_POST_PROGRESS = 1
+    private val scope = CoroutineScope(Dispatchers.Main)
+    private var job: Job? = null
 
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.Main + job + handler
-
-    private val handler = CoroutineExceptionHandler { _, exception ->
-        Log.i(TAG, "$TAG $exception")
-    }
-
-    private val job: Job by lazy {
-        Job()
-    }
-
+    /**
+     * executeAndReturn() use to start the task
+     *  Task().executeAndReturn() or  Task().executeAndReturn(value)
+     */
     fun executeAndReturn(vararg params: Params): CoroutineAsyncTask<Params, Progress, Result> {
         return executeCoroutineTask(params)
     }
 
+    /**
+     * perform the task in background and main thread
+     * in series
+     */
     private fun executeCoroutineTask(params: Array<out Params>): CoroutineAsyncTask<Params, Progress, Result> {
         onPreExecute()
         val deferredResult = CoroutineScope(Dispatchers.IO).async {
@@ -39,8 +38,12 @@ abstract class CoroutineAsyncTask<Params, Progress, Result> : CoroutineScope {
         return this
     }
 
-    private fun callOnPostExecute(deferredResult: Deferred<Result>){
-        launch {
+    /**
+     * Get the result from background thread
+     * and pass on onPostExecute()
+     */
+    private fun callOnPostExecute(deferredResult: Deferred<Result>) {
+        job = scope.launch {
             try {
                 Log.i(TAG, "$TAG start launch")
                 val result = deferredResult.await()
@@ -65,6 +68,7 @@ abstract class CoroutineAsyncTask<Params, Progress, Result> : CoroutineScope {
     @MainThread
     protected open fun onPostExecute(result: Result) {
         Log.i(TAG, "$TAG onPostExecute invoke")
+        cancel()
     }
 
     @MainThread
@@ -84,15 +88,20 @@ abstract class CoroutineAsyncTask<Params, Progress, Result> : CoroutineScope {
         onCancelled()
     }
 
+    /**
+     * Cancel the job if it is in active state
+     */
     fun cancel() {
-        if (!job.isCancelled && job.isActive) {
-            job.cancel()
+        if (job?.isCancelled == false && job?.isActive == true) {
+            job?.cancel()
+            //remove the handler after completing the task
+            sHandler?.removeCallbacksAndMessages(null)
             Log.i(TAG, "$TAG job has been canceled!!!!!")
         }
     }
 
     fun isCancelled(): Boolean {
-        return job.isCancelled && !job.isActive
+        return job?.isCancelled == true && job?.isActive == false
     }
 
     private fun getMainHandler(): Handler? {
@@ -109,6 +118,9 @@ abstract class CoroutineAsyncTask<Params, Progress, Result> : CoroutineScope {
     }
 
 
+    /**
+     * Publish the progress of task
+     */
     @WorkerThread
     protected fun publishProgress(vararg values: Progress) {
         if (!isCancelled()) {
@@ -119,6 +131,9 @@ abstract class CoroutineAsyncTask<Params, Progress, Result> : CoroutineScope {
         }
     }
 
+    /**
+     * update the progress of the task
+     */
     private inner class InternalHandler(looper: Looper) : Handler(looper) {
         override fun handleMessage(msg: Message) {
             val result: AsyncTaskResult<*> = msg.obj as AsyncTaskResult<*>
