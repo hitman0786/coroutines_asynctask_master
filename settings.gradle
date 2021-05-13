@@ -1,0 +1,2 @@
+rootProject.name = "coroutines_asynctask_master"
+include ':app'
